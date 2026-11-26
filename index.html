@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>酷辣博-Pasero雀角转录作图工具</title>
+<meta name="description" content="酷辣博-Pasero雀角转录作图工具：上传差异分析表或表达矩阵，一分钟出发表级火山图、热图、PCA、富集气泡图等 10 种图。免费，数据不离开浏览器。">
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm lab instrument in the Pasero family, a tool that opens mid-use
+   IDEA: a bench plotter: white figure sheet on a pale-mint desk, control column beside it
+   PICTURE: the live figure itself (volcano or heatmap), large, at the top
+   COLOUR and TYPE: Pasero cream #f4f7f3, forest ink #14241f, lavender accent #6f58a0, dark pill buttons; DM Sans
+   LAYOUT: tabs, then controls left / figure right; below 860px figure first, then controls */
+:root{color-scheme:light dark;--bg:light-dark(#f4f7f3,#121b15);--ink:light-dark(#14241f,#e9efe8);--mut:light-dark(#5b6b62,#9fb0a5);--pan:light-dark(#fff,#19251d);--line:light-dark(#d9e2dc,#2c3a31);--acc:light-dark(#6f58a0,#c4afe3);--accs:light-dark(#efe9f7,#2a2238);--cta:light-dark(#13241d,#e9efe8);--ctat:light-dark(#fff,#13241d);--err:light-dark(#b4443a,#f08a7e)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "DM Sans","PingFang SC","Hiragino Sans","Yu Gothic UI","Microsoft YaHei","Meiryo","Noto Sans SC","Noto Sans JP",system-ui,sans-serif;overflow-x:clip}
+header{padding:26px max(4vw,16px) 4px;max-width:1340px;margin:0 auto}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.1;margin:0 0 8px;font-weight:700;letter-spacing:.01em;text-wrap:balance}h1 em{font-style:normal;color:var(--acc)}
+.brand{display:inline-block;font-size:13px;font-weight:600;color:var(--acc);background:var(--accs);border-radius:999px;padding:3px 12px;margin-bottom:10px}
+header p{margin:0;color:var(--mut);max-width:72ch}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;max-width:1340px;margin:14px auto 0;padding:0 max(4vw,16px)}
+.tab{min-height:40px;padding:6px 16px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--mut);font:inherit;font-weight:600;cursor:pointer}
+.tab.on{background:var(--cta);border-color:var(--cta);color:var(--ctat)}
+.wrap{display:grid;grid-template-columns:340px minmax(0,1fr);grid-template-areas:"ctl fig";gap:20px;padding:16px max(4vw,16px) 40px;max-width:1340px;margin:0 auto;align-items:start}
+.wrap[hidden]{display:none}
+.ctl{grid-area:ctl;display:grid;gap:14px}.figbox{grid-area:fig;position:sticky;top:12px}
+.pan{background:var(--pan);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.pan h2{font-size:15px;margin:0 0 10px;font-weight:700}
+label{display:block;font-size:14px;color:var(--mut);margin:8px 0 3px}
+input,select,textarea,button{font:inherit;font-size:16px;color:var(--ink)}
+input[type=number],input[type=text],select,textarea{width:100%;min-height:40px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+textarea{min-height:64px;resize:vertical}
+input[type=color]{width:44px;height:40px;border:1px solid var(--line);border-radius:7px;padding:2px;background:var(--bg)}
+input[type=range]{width:100%;accent-color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{min-height:44px;padding:8px 18px;border-radius:999px;border:1px solid var(--ink);background:transparent;cursor:pointer;font-weight:600}
+.btn.pri{background:var(--cta);border-color:var(--cta);color:var(--ctat)}
+.btn:hover{border-color:var(--acc);color:var(--acc)}.btn.pri:hover{background:var(--acc);border-color:var(--acc);color:#fff}
+.drop{border:2px dashed var(--line);border-radius:12px;background:var(--bg);padding:16px;text-align:center;cursor:pointer;color:var(--mut);font-size:14px}
+.drop.on,.drop:hover{border-color:var(--acc);color:var(--ink);background:var(--accs)}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);margin-top:10px}
+.chk input{width:20px;height:20px;accent-color:var(--acc);flex:none}
+.sheet{background:#fff;border-radius:14px;border:1px solid var(--line);padding:10px;box-shadow:0 18px 40px -26px rgba(20,36,31,.35);overflow:auto;max-height:82vh}
+.sheet svg{display:block;width:100%;height:auto}
+.stats{display:flex;flex-wrap:wrap;gap:8px 18px;margin:12px 2px 0;font-size:15px}
+.stats b{font-variant-numeric:tabular-nums}
+.exp{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.msg{font-size:14px;margin-top:8px;color:var(--mut);min-height:1.2em}.msg.err{color:var(--err)}.msg.warn{color:#a8650b}
+.note{font-size:13px;color:var(--mut);margin-top:6px}
+.vote,.segs{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.vote .btn,.segs .btn{font-weight:500;font-size:15px;border-color:var(--line)}.vote .btn.on,.segs .btn.on{border-color:var(--acc);color:var(--acc);background:var(--accs)}
+.sw{display:flex;gap:10px;align-items:end}
+.smp{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:4px}
+.smp div{display:grid;grid-template-columns:28px minmax(0,1fr) 110px;gap:6px;align-items:center;padding:4px 8px;border-bottom:1px solid var(--line);font-size:14px}
+.smp div:last-child{border-bottom:none}
+.smp input[type=text]{min-height:32px;padding:3px 6px;font-size:14px}
+.smp input[type=checkbox]{width:18px;height:18px;accent-color:var(--acc)}
+.smp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.foot{max-width:1340px;margin:0 auto;padding:8px max(4vw,16px) 48px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.foot .pan{padding:20px 22px}
+.foot h2{font-size:18px;margin:0 0 8px}
+.foot p{margin:0 0 10px;max-width:60ch}
+.who{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.ava{width:52px;height:52px;border-radius:50%;background:var(--accs);color:var(--acc);display:grid;place-items:center;font-weight:700;font-size:20px;flex:none}
+.who b{font-size:17px}.who small{display:block;color:var(--mut);font-size:14px}
+.xhs{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:6px}
+.xhs code{font:600 16px "DM Sans",monospace;background:var(--accs);color:var(--acc);padding:6px 12px;border-radius:999px}
+.ps{background:var(--cta);color:var(--ctat);border-color:var(--cta)}
+.foot .ps{padding:14px 16px}.foot .ps h2{font-size:15px;margin-bottom:4px}.foot .ps p{font-size:14px;margin-bottom:10px}.foot .ps .btn{min-height:36px;padding:4px 14px;font-size:14px}
+.ps p{opacity:.85}
+.ps a.btn{border-color:currentColor;color:inherit;text-decoration:none;display:inline-flex;align-items:center}
+.ps a.btn:hover{background:var(--acc);border-color:var(--acc);color:#fff}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.hlink{font-size:14px;color:var(--acc);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;white-space:nowrap;margin-top:6px}
+.hlink:hover{border-color:var(--acc)}
+.hright{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.lang{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--pan)}
+.lang button{border:0;background:transparent;color:var(--mut);font-size:14px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer;min-height:34px}
+.lang button.on{background:var(--cta);color:var(--ctat)}
+@media(max-width:600px){.hright{flex-direction:row;align-items:center}}
+@media(max-width:860px){.foot{grid-template-columns:minmax(0,1fr)}}
+[hidden]{display:none!important}
+.vrow{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:8px;margin-top:10px}
+.vrow select,.vrow input{min-height:36px;font-size:14px}
+@media(max-width:860px){.wrap{grid-template-columns:minmax(0,1fr);grid-template-areas:"fig" "ctl"}.figbox{position:static}}
+</style>
+</head>
+<body>
+<header class="hdr">
+<div>
+<h1>酷辣博-<em>Pasero雀角转录作图工具</em></h1>
+<p>上传测序公司或论文给的表格，一分钟出发表级火山图、热图、PCA、富集气泡图等 10 种图；只有一串基因名也能直接做 GO / Reactome 富集。数据只在你的浏览器里处理，不会上传到任何服务器。</p>
+</div>
+<div class="hright"><div class="lang" role="group" aria-label="Language"><button data-l="zh">中文</button><button data-l="en">EN</button><button data-l="ja">日本語</button></div><a class="hlink" href="https://pasero.app" target="_blank" rel="noopener">Pasero 雀角出品 ↗</a></div>
+</header>
+<nav class="tabs">
+<button class="tab on" data-t="volcano">火山图</button>
+<button class="tab" data-t="ma">MA 图</button>
+<button class="tab" data-t="heatmap">热图</button>
+<button class="tab" data-t="pca">PCA 图</button>
+<button class="tab" data-t="corr">样本相关性</button>
+<button class="tab" data-t="box">基因表达箱线图</button>
+<button class="tab" data-t="venn">韦恩图</button>
+<button class="tab" data-t="enrich">富集气泡图</button>
+</nav>
+
+<!-- 火山图 -->
+<main class="wrap" id="P-volcano">
+<section class="figbox">
+<div class="sheet" id="vSheet"></div>
+<div class="stats" id="vStats"></div>
+<div class="exp">
+<button class="btn pri" id="vSvg">导出 SVG（矢量）</button>
+<button class="btn" id="vPng">导出 PNG（高清）</button>
+<button class="btn" id="vCsv">导出差异基因表</button>
+</div>
+<div class="msg" id="vExMsg"></div>
+</section>
+<section class="ctl">
+<div class="slot" data-s="pDE"></div>
+<div class="slot" data-s="pTh"></div>
+<div class="slot" data-s="pLab"></div>
+<div class="slot" data-s="pApp"></div>
+<div class="slot" data-s="pVote"></div>
+</section>
+</main>
+
+<!-- MA -->
+<main class="wrap" id="P-ma" hidden>
+<section class="figbox">
+<div class="sheet" id="maSheet"></div>
+<div class="stats" id="maStats"></div>
+<div class="exp">
+<button class="btn pri" id="maSvgB">导出 SVG（矢量）</button>
+<button class="btn" id="maPngB">导出 PNG（高清）</button>
+<button class="btn" id="maCsvB">导出差异基因表</button>
+</div>
+<div class="msg" id="maExMsg"></div>
+</section>
+<section class="ctl">
+<div class="slot" data-s="pDE"></div>
+<div class="pan">
+<h2>MA 图设置</h2>
+<label for="cA">平均表达量列（横轴）</label><select id="cA"></select>
+<div class="note">已自动识别 baseMean / AveExpr / logCPM 等列；没有的话会用表里的样本列算平均值。阈值、配色、标注和火山图共用。</div>
+</div>
+<div class="slot" data-s="pTh"></div>
+<div class="slot" data-s="pLab"></div>
+<div class="slot" data-s="pApp"></div>
+<div class="slot" data-s="pVote"></div>
+</section>
+</main>
+
+<!-- 热图 -->
+<main class="wrap" id="P-heatmap" hidden>
+<section class="figbox">
+<div class="sheet" id="hSheet"></div>
+<div class="stats" id="hStats"></div>
+<div class="exp">
+<button class="btn pri" id="hSvg">导出 SVG（矢量）</button>
+<button class="btn" id="hPng">导出 PNG（高清）</button>
+<button class="btn" id="hCsv">导出作图矩阵</button>
+</div>
+<div class="msg" id="hExMsg"></div>
+</section>
+<section class="ctl">
+<div class="slot" data-s="pMat"></div>
+<div class="pan">
+<h2>2. 选哪些基因</h2>
+<select id="hSel"><option value="var">表达变化最大的前 N 个（按方差）</option><option value="sig">最显著的前 N 个（需要表中有 P 值列）</option><option value="list">我自己指定基因</option></select>
+<div id="hNBox"><label for="hN">N</label><input type="number" id="hN" value="50" min="2" max="500"></div>
+<div id="hListBox" hidden><label for="hList">基因列表（逗号、空格或换行分隔）</label><textarea id="hList" placeholder="例如：Sox9, Amh, Dmrt1"></textarea></div>
+<div class="msg" id="hSelMsg"></div>
+</div>
+<div class="pan">
+<h2>3. 标准化与聚类</h2>
+<select id="hScale"><option value="row">按行 z-score（推荐）</option><option value="none">不缩放，直接画 log 表达量</option></select>
+<label for="hClip">颜色范围 ±</label><input type="number" id="hClip" value="2" step="0.5" min="0.5">
+<label class="chk"><input type="checkbox" id="hCR" checked>基因（行）聚类</label>
+<label class="chk"><input type="checkbox" id="hCC">样本（列）聚类</label>
+</div>
+<div class="pan">
+<h2>4. 外观</h2>
+<label for="hPal">配色方案</label>
+<select id="hPal"><option value="0">蓝白红</option><option value="1">深蓝白砖红</option><option value="2">紫白橙</option><option value="3">绿黑红（经典芯片风）</option></select>
+<div class="sw" style="margin-top:10px">
+<div><label for="hLo">低</label><input type="color" id="hLo"></div>
+<div><label for="hMid">中</label><input type="color" id="hMid"></div>
+<div><label for="hHi">高</label><input type="color" id="hHi"></div>
+</div>
+<label class="chk"><input type="checkbox" id="hNames" checked>显示基因名（超过 120 个基因时自动隐藏）</label>
+<label class="chk"><input type="checkbox" id="hItal" checked>基因名用斜体</label>
+<label for="hTtl">图标题（可留空）</label><input type="text" id="hTtl" value="">
+<div class="row">
+<div><label for="hW">宽度</label><select id="hW"><option value="520">520</option><option value="640" selected>640</option><option value="800">800</option></select></div>
+<div><label for="hFs">字号</label><input type="number" id="hFs" value="11" min="6" max="20"></div>
+</div>
+</div>
+<div class="slot" data-s="pVote"></div>
+</section>
+</main>
+
+<!-- PCA -->
+<main class="wrap" id="P-pca" hidden>
+<section class="figbox">
+<div class="sheet" id="pcSheet"></div>
+<div class="stats" id="pcStats"></div>
+<div class="exp">
+<button class="btn pri" id="pcSvgB">导出 SVG（矢量）</button>
+<button class="btn" id="pcPngB">导出 PNG（高清）</button>
+<button class="btn" id="pcCsvB">导出 PC 坐标表</button>
+</div>
+<div class="msg" id="pcExMsg"></div>
+</section>
+<section class="ctl">
+<div class="slot" data-s="pMat"></div>
+<div class="pan">
+<h2>2. PCA 设置</h2>
+<label for="pcN">用哪些基因</label><select id="pcN"><option value="500">表达变化最大的前 500 个基因</option><option value="1000">表达变化最大的前 1000 个基因</option><option value="2000">表达变化最大的前 2000 个基因</option><option value="0">全部基因</option></select>
+<label class="chk"><input type="checkbox" id="pcScale">按基因标准化（scale）</label>
+<div class="row">
+<div><label for="pcX">横轴</label><select id="pcX"></select></div>
+<div><label for="pcY">纵轴</label><select id="pcY"></select></div>
+</div>
+<label class="chk"><input type="checkbox" id="pcEll" checked>显示 95% 置信椭圆（每组至少 3 个样本）</label>
+<label class="chk"><input type="checkbox" id="pcLab" checked>显示样本名</label>
+</div>
+<div class="pan">
+<h2>3. 外观</h2>
+<label for="pcPs">点大小</label><input type="range" id="pcPs" min="3" max="12" step="0.5" value="6">
+<label for="pcTtl">图标题（可留空）</label><input type="text" id="pcTtl" value="">
+<div class="row">
+<div><label for="pcSz">尺寸</label><select id="pcSz"><option value="520x480">标准 520×480</option><option value="600x520">横向 600×520</option><option value="460x460">正方 460×460</option><option value="760x620">大图 760×620</option></select></div>
+<div><label for="pcFs">字号</label><input type="number" id="pcFs" value="13" min="8" max="24"></div>
+</div>
+</div>
+<div class="slot" data-s="pVote"></div>
+</section>
+</main>
+
+<!-- 相关性 -->
+<main class="wrap" id="P-corr" hidden>
+<section class="figbox">
+<div class="sheet" id="crSheet"></div>
+<div class="stats" id="crStats"></div>
+<div class="exp">
+<button class="btn pri" id="crSvgB">导出 SVG（矢量）</button>
+<button class="btn" id="crPngB">导出 PNG（高清）</button>
+<button class="btn" id="crCsvB">导出相关系数矩阵</button>
+</div>
+<div class="msg" id="crExMsg"></div>
+</section>
+<section class="ctl">
+<div class="slot" data-s="pMat"></div>
+<div class="pan">
+<h2>2. 相关性设置</h2>
+<label for="crM">方法</label><select id="crM"><option value="pearson">Pearson</option><option value="spearman">Spearman</option></select>
+<label for="crN">用哪些基因</label><select id="crN"><option value="500">表达变化最大的前 500 个基因</option><option value="1000">表达变化最大的前 1000 个基因</option><option value="2000">表达变化最大的前 2000 个基因</option><option value="0">全部基因</option></select>
+<label class="chk"><input type="checkbox" id="crCl" checked>样本聚类</label>
+<label class="chk"><input type="checkbox" id="crVal" checked>在格子里显示数值（样本不超过 16 个时）</label>
+</div>
+<div class="pan">
+<h2>3. 外观</h2>
+<label for="crPal">配色方案</label><select id="crPal"><option value="0">白 → 红</option><option value="1">蓝 → 白 → 红</option><option value="2">Viridis（色盲友好）</option></select>
+<label for="crTtl">图标题（可留空）</label><input type="text" id="crTtl" value="">
+<div class="row">
+<div><label for="crW">宽度</label><select id="crW"><option value="480">480</option><option value="600" selected>600</option><option value="760">760</option></select></div>
+<div><label for="crFs">字号</label><input type="number" id="crFs" value="11" min="6" max="20"></div>
+</div>
+</div>
+<div class="slot" data-s="pVote"></div>
+</section>
+</main>
+
+<!-- 箱线图 -->
+<main class="wrap" id="P-box" hidden>
+<section class="figbox">
+<div class="sheet" id="bxSheet"></div>
+<div class="stats" id="bxStats"></div>
+<div class="exp">
+<button class="btn pri" id="bxSvgB">导出 SVG（矢量）</button>
+<button class="btn" id="bxPngB">导出 PNG（高清）</button>
+<button class="btn" id="bxCsvB">导出作图数据</button>
+</div>
+<div class="msg" id="bxExMsg"></div>
+</section>
+<section class="ctl">
+<div class="slot" data-s="pMat"></div>
+<div class="pan">
+<h2>2. 选基因</h2>
+<label for="bxG">基因列表（逗号、空格或换行分隔，最多 24 个）</label><textarea id="bxG" placeholder="例如：Sox9, Amh, Dmrt1"></textarea>
+<div class="msg" id="bxMsg"></div>
+</div>
+<div class="pan">
+<h2>3. 图形</h2>
+<label for="bxT">样式</label><select id="bxT"><option value="box">箱线图 + 散点</option><option value="bar">柱状图（均值 ± SD）+ 散点</option></select>
+<label class="chk"><input type="checkbox" id="bxPt" checked>显示每个样本的点</label>
+<label class="chk"><input type="checkbox" id="bxSt" checked>显示 t 检验 P 值（与第一组比较）</label>
+<label class="chk"><input type="checkbox" id="bxIt" checked>基因名用斜体</label>
+<div class="row">
+<div><label for="bxC">每行几个</label><select id="bxC"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select></div>
+<div><label for="bxFs">字号</label><input type="number" id="bxFs" value="11" min="7" max="20"></div>
+</div>
+<label for="bxTtl">图标题（可留空）</label><input type="text" id="bxTtl" value="">
+</div>
+<div class="slot" data-s="pVote"></div>
+</section>
+</main>
+
+<!-- 韦恩图 -->
+<main class="wrap" id="P-venn" hidden>
+<section class="figbox">
+<div class="sheet" id="vnSheet"></div>
+<div class="stats" id="vnStats"></div>
+<div class="exp">
+<button class="btn pri" id="vnSvgB">导出 SVG（矢量）</button>
+<button class="btn" id="vnPngB">导出 PNG（高清）</button>
+<button class="btn" id="vnCsvB">导出交集基因表</button>
+</div>
+<div class="msg" id="vnExMsg"></div>
+</section>
+<section class="ctl">
+<div class="pan">
+<h2>1. 基因列表</h2>
+<div class="note" style="margin:0 0 6px">填 2 组或 3 组，第三组留空就画两圆韦恩图。</div>
+<div class="vrow"><input type="text" id="vnA" value="A" aria-label="名称 A"><select id="viA"><option value="">填入…</option><option value="u">火山图的上调基因</option><option value="d">火山图的下调基因</option><option value="s">火山图的全部差异基因</option></select></div>
+<textarea id="vlA" placeholder="每行一个基因，或用逗号、空格分隔"></textarea>
+<div class="vrow"><input type="text" id="vnB" value="B" aria-label="名称 B"><select id="viB"><option value="">填入…</option><option value="u">火山图的上调基因</option><option value="d">火山图的下调基因</option><option value="s">火山图的全部差异基因</option></select></div>
+<textarea id="vlB" placeholder="每行一个基因，或用逗号、空格分隔"></textarea>
+<div class="vrow"><input type="text" id="vnC" value="C" aria-label="名称 C"><select id="viC"><option value="">填入…</option><option value="u">火山图的上调基因</option><option value="d">火山图的下调基因</option><option value="s">火山图的全部差异基因</option></select></div>
+<textarea id="vlC" placeholder="每行一个基因，或用逗号、空格分隔"></textarea>
+<div class="msg" id="vnMsg"></div>
+</div>
+<div class="pan">
+<h2>2. 外观</h2>
+<label for="vnPal">配色方案</label><select id="vnPal"><option value="0">期刊风（NPG）</option><option value="1">柔和</option><option value="2">色盲友好</option></select>
+<label class="chk"><input type="checkbox" id="vnPct">同时显示百分比</label>
+<label for="vnTtl">图标题（可留空）</label><input type="text" id="vnTtl" value="">
+<div class="row">
+<div><label for="vnW">宽度</label><select id="vnW"><option value="440">440</option><option value="520" selected>520</option><option value="640">640</option></select></div>
+<div><label for="vnFs">字号</label><input type="number" id="vnFs" value="14" min="8" max="24"></div>
+</div>
+</div>
+<div class="slot" data-s="pVote"></div>
+</section>
+</main>
+
+<!-- 富集 -->
+<main class="wrap" id="P-enrich" hidden>
+<section class="figbox">
+<div class="sheet" id="enSheet"></div>
+<div class="stats" id="enStats"></div>
+<div class="exp">
+<button class="btn pri" id="enSvgB">导出 SVG（矢量）</button>
+<button class="btn" id="enPngB">导出 PNG（高清）</button>
+<button class="btn" id="enCsvB">导出作图数据</button>
+</div>
+<div class="msg" id="enExMsg"></div>
+</section>
+<section class="ctl">
+<div class="pan">
+<h2>1. 数据来源</h2>
+<div class="segs" id="eMode" style="margin-bottom:10px"><button class="btn on" data-m="file">我有富集结果表</button><button class="btn" data-m="list">我只有基因列表</button></div>
+<div id="eModeFile">
+<div class="drop" id="eDrop">点击或拖入文件<br>clusterProfiler、DAVID、Metascape、Enrichr 等导出的表</div>
+<input type="file" id="eFile" accept=".xlsx,.xls,.csv,.tsv,.txt,.gz" hidden>
+<div class="msg" id="eMsg">当前为示例数据（模拟生成）</div>
+<div id="eSheetBox" hidden><label for="eSh">工作表</label><select id="eSh"></select></div>
+</div>
+<div id="eModeList" hidden>
+<label for="egList">基因列表（换行、逗号或空格分隔）</label><textarea id="egList" placeholder="例如：TP53&#10;MDM2&#10;CDKN1A"></textarea>
+<div class="row">
+<div><label for="egDb">基因集</label><select id="egDb"><option value="go_bp_hs">GO 生物过程（BP）</option><option value="go_mf_hs">GO 分子功能（MF）</option><option value="go_cc_hs">GO 细胞组分（CC）</option><option value="all">GO 全部（BP+MF+CC）</option><option value="reactome_hs">Reactome 通路</option></select></div>
+<div><label for="egMin">通路至少命中几个基因</label><input type="number" id="egMin" value="2" min="1" max="20"></div>
+</div>
+<div class="row" style="margin-top:10px">
+<div><button class="btn pri" id="egGo">开始富集</button></div>
+<div><button class="btn" id="egDemo">填入示例基因</button></div>
+</div>
+<div class="msg" id="egMsg"></div>
+<div class="note">超几何检验 + BH 校正，背景是该基因集里所有有注释的基因。基因名不区分大小写；小鼠基因（如 Arg1）会按大写匹配人类同源基因，少数名字不同的会漏掉。基因列表不会上传，计算全在你的浏览器里完成。</div>
+</div>
+<label for="eT">通路名列</label><select id="eT"></select>
+<div class="row">
+<div><label for="eP">P 值列（颜色）</label><select id="eP"></select></div>
+<div><label for="eC">基因数列（大小）</label><select id="eC"></select></div>
+</div>
+<label for="eX">横轴</label><select id="eX"></select>
+<div id="eCatBox" hidden><label for="eCat">分类</label><select id="eCat"></select></div>
+<div class="note">已自动识别列名，识别错了可手动修改。</div>
+</div>
+<div class="pan">
+<h2>2. 显示哪些通路</h2>
+<label for="eN">显示前 N 个（按 P 值）</label><input type="number" id="eN" value="15" min="2" max="60">
+<label for="eLen">通路名最多显示几个字符</label><input type="number" id="eLen" value="50" min="15" max="120">
+</div>
+<div class="pan">
+<h2>3. 外观</h2>
+<label for="ePal">配色方案</label><select id="ePal"><option value="0">红 → 蓝</option><option value="1">Viridis（色盲友好）</option><option value="2">紫 → 黄</option></select>
+<label for="eTtl">图标题（可留空）</label><input type="text" id="eTtl" value="">
+<div class="row">
+<div><label for="eW">宽度</label><select id="eW"><option value="600">600</option><option value="720" selected>720</option><option value="860">860</option></select></div>
+<div><label for="eFs">字号</label><input type="number" id="eFs" value="12" min="7" max="20"></div>
+</div>
+</div>
+<div class="slot" data-s="pVote"></div>
+</section>
+</main>
+
+<div id="holder" hidden>
+<div class="pan" id="pDE">
+<h2>1. 差异分析结果表</h2>
+<div class="drop" id="vDrop">点击或拖入文件<br>支持 .xlsx / .xls / .csv / .tsv / .txt / .gz</div>
+<input type="file" id="vFile" accept=".xlsx,.xls,.csv,.tsv,.txt,.gz" hidden>
+<div class="msg" id="vMsg">当前为示例数据（模拟生成）</div>
+<div id="vSheetBox" hidden><label for="vSh">工作表</label><select id="vSh"></select></div>
+<label for="cG">基因名列</label><select id="cG"></select>
+<div class="row">
+<div><label for="cF">log2FC 列</label><select id="cF"></select></div>
+<div><label for="cP">P 值列</label><select id="cP"></select></div>
+</div>
+<div class="note">已自动识别列名，识别错了可手动修改。建议用校正后的 P 值（padj / FDR）。</div>
+</div>
+<div class="pan" id="pTh">
+<h2>2. 阈值</h2>
+<div class="row">
+<div><label for="tF">|log2FC| ≥</label><input type="number" id="tF" value="1" step="0.1" min="0"></div>
+<div><label for="tP">P 值 &lt;</label><input type="number" id="tP" value="0.05" step="0.01" min="0"></div>
+</div>
+<label class="chk"><input type="checkbox" id="lines" checked>显示阈值虚线</label>
+</div>
+<div class="pan" id="pLab">
+<h2>3. 基因标注</h2>
+<label for="topN">自动标注最显著的前 N 个基因</label><input type="number" id="topN" value="10" min="0" max="100">
+<label for="genes">指定要标注的基因（逗号、空格或换行分隔）</label><textarea id="genes" placeholder="例如：Cxcl10, Il6"></textarea>
+<div class="msg" id="geneMsg"></div>
+<label class="chk"><input type="checkbox" id="ital" checked>基因名用斜体</label>
+</div>
+<div class="pan" id="pApp">
+<h2>4. 外观</h2>
+<label for="pal">配色方案</label>
+<select id="pal"><option value="0">经典红蓝</option><option value="1">期刊风（NPG）</option><option value="2">色盲友好</option><option value="3">柔和</option></select>
+<div class="sw" style="margin-top:10px">
+<div><label for="cU">上调</label><input type="color" id="cU"></div>
+<div><label for="cD">下调</label><input type="color" id="cD"></div>
+<div><label for="cN">不显著</label><input type="color" id="cN"></div>
+</div>
+<div class="row">
+<div><label for="ps">点大小</label><input type="range" id="ps" min="1" max="6" step="0.5" value="2.5"></div>
+<div><label for="op">透明度</label><input type="range" id="op" min="0.2" max="1" step="0.05" value="0.75"></div>
+</div>
+<label for="ttl">图标题（可留空）</label><input type="text" id="ttl" value="">
+<div class="row">
+<div><label for="sz">尺寸</label><select id="sz"><option value="600x520">横向 600×520</option><option value="520x520">正方 520×520</option><option value="440x520">竖向 440×520</option><option value="800x600">大图 800×600</option></select></div>
+<div><label for="fs">字号</label><input type="number" id="fs" value="13" min="8" max="24"></div>
+</div>
+</div>
+<div class="pan" id="pMat">
+<h2>1. 表达矩阵</h2>
+<div class="drop" id="hDrop">点击或拖入文件<br>counts、FPKM、TPM 矩阵，或带表达量的差异表</div>
+<input type="file" id="hFile" accept=".xlsx,.xls,.csv,.tsv,.txt,.gz" hidden>
+<div class="msg" id="hMsg">当前为示例数据（模拟生成）</div>
+<div id="hSheetBox" hidden><label for="hSh">工作表</label><select id="hSh"></select></div>
+<label for="hG">基因名列</label><select id="hG"></select>
+<label>样本列和分组</label>
+<div class="smp" id="hSmp"></div>
+<div class="note">已自动勾选样本列并按名字猜了分组，可以直接修改分组名。</div>
+<label for="hType">数值类型</label>
+<select id="hType"><option value="auto">自动判断</option><option value="counts">原始 counts → log2(CPM+1)</option><option value="norm">FPKM / TPM → log2(x+1)</option><option value="log">已经取过 log，不再转换</option></select>
+<div class="msg" id="hTypeMsg"></div>
+</div>
+<div class="pan vote-pan" id="pVote"><h2>下一个想要什么图？</h2><div class="note" style="margin:0 0 8px">点一下告诉酷辣博，票数最多的先做。</div><div class="vote"></div></div>
+</div>
+
+
+<footer class="foot">
+<section class="pan">
+<h2>关于作者</h2>
+<div class="who"><div class="ava">酷</div><div><b>酷辣博</b><small>深耕转录组数据分析 5 年（也就是当了 5 年的科研牛马）</small></div></div>
+<p>认真地做了这个免费工具，纯属玩玩。独乐乐不如众乐乐，好用就拿去用。</p>
+<p>关注我的小红书，纯分子生物学干货，从不夹带湿（私）货。</p>
+<div class="xhs"><a class="btn pri" id="xhsGo" href="https://xhslink.cn/o/8qQs7IS5w5v" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">去小红书主页 ↗</a><span>小红书号</span><code id="xhsId">629311186</code><button class="btn" id="xhsCopy">复制</button><span class="msg" id="xhsMsg" style="margin:0"></span></div>
+<div class="xhs"><a class="btn" id="igGo" href="https://www.instagram.com/redynag/" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:none;display:inline-flex;align-items:center">Instagram @redynag ↗</a></div>
+<div class="note">已有 1400+ 位同行关注</div>
+</section>
+<section class="pan ps">
+<h2>Pasero 雀角</h2>
+<p>缺觉就用雀角，打通科研人的任督二脉。</p>
+<a class="btn" href="https://pasero.app" target="_blank" rel="noopener">访问 pasero.app ↗</a>
+</section>
+</footer>
+
+<script src="i18n.js"></script>
+<script src="core.js"></script>
+<script src="plots.js"></script>
+<script src="sc.js"></script>
+<script src="gset.js"></script>
+</body>
+</html>
