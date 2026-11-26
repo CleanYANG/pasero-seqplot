@@ -301,7 +301,12 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 <h2>3. 图形</h2>
 <label for="bxT">样式</label><select id="bxT"><option value="box">箱线图 + 散点</option><option value="bar">柱状图（均值 ± SD）+ 散点</option></select>
 <label class="chk"><input type="checkbox" id="bxPt" checked>显示每个样本的点</label>
-<label class="chk"><input type="checkbox" id="bxSt" checked>显示 t 检验 P 值（与第一组比较）</label>
+<label class="chk"><input type="checkbox" id="bxSt" checked>显示 t 检验结果（与对照组比较）</label>
+<div class="row">
+<div><label for="bxRef">对照组</label><select id="bxRef"></select></div>
+<div><label for="bxMk">标注方式</label><select id="bxMk"><option value="auto">自动（组多时用星号）</option><option value="br">括号 + P 值</option><option value="star">星号（标在每组上方）</option></select></div>
+</div>
+<label class="chk"><input type="checkbox" id="bxAdj" checked>BH 多重校正（比较不止一组时）</label>
 <label class="chk"><input type="checkbox" id="bxIt" checked>基因名用斜体</label>
 <div class="row">
 <div><label for="bxC">每行几个</label><select id="bxC"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select></div>

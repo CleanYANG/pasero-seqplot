@@ -174,21 +174,27 @@ function bxData(){const sm=Hs.sm,groups=groupsOf(sm),m=new Map(Hs.all.map(d=>[d.
  return{groups,genes,sm}}
 function bxSvg(){if(!BX||!BX.genes.length)return null;const {groups,genes,sm}=BX;
  const C=Math.min(+$("bxC").value,genes.length),fs=+$("bxFs").value||11,it=$("bxIt").checked,bar=$("bxT").value==="bar",showPt=$("bxPt").checked,stat=$("bxSt").checked&&groups.length>=2,title=$("bxTtl").value.trim();
- const lw=Math.max(...groups.map(g=>tw(g,fs)))+12,rot=lw>110,gl=rot?(lw-12)*0.72+8:fs+8;
- const fw=Math.max(170,groups.length*Math.max(46,rot?46:lw)+fs*4.6),fh=200,rows=Math.ceil(genes.length/C),top=title?fs*2.6:6,cellH=fh+fs*2+gl+14;
+ const ref=Math.max(0,groups.indexOf($("bxRef").value)),ncmp=groups.length-1,mk=$("bxMk").value,star=stat&&(mk==="star"||(mk==="auto"&&ncmp>3)),adj=$("bxAdj").checked&&ncmp>1;
+ BX.mode={ref:groups[ref],star,adj};
+ const lw=Math.max(...groups.map(g=>tw(g,fs)))+12,rot=lw>110,gl=rot?(lw-12)*0.6+fs+8:fs+8;
+ const bw0=Math.max(46,rot?46:lw),xr=rot?Math.max(0,(lw-12)*0.82-bw0/2):0;
+ const fw=Math.max(170,groups.length*bw0+fs*4.6)+xr,fhD=200,step=fs*1.6,head=!stat?fs*0.4:star?fs*1.8:ncmp*step+fs*0.6,fh=fhD+head;
+ const rows=Math.ceil(genes.length/C),top=title?fs*2.6:6,cellH=fh+fs*2+gl+14;
  const W=Math.round(fw*C+10),H=top+rows*cellH;let o=svgOpen(W,H,fs);
  if(title)o+=`<text x="${W/2}" y="${fs*1.7}" text-anchor="middle" font-size="${fs*1.3}" font-weight="bold" fill="#111">${esc(title)}</text>`;
  const yl=Hs.type==="counts"?"log2(CPM + 1)":Hs.type==="norm"?TT("log2(表达量 + 1)"):TT("表达量");
  const rnd=seeded(5),csv=[];
- genes.forEach((d,gi)=>{const cx0=5+(gi%C)*fw,cy0=top+Math.floor(gi/C)*cellH,L=cx0+fs*4,R=cx0+fw-10,T=cy0+fs*2,B=T+fh,pw=R-L;
+ const stars=p=>p<1e-4?"****":p<1e-3?"***":p<0.01?"**":p<0.05?"*":"ns";
+ genes.forEach((d,gi)=>{const cx0=5+(gi%C)*fw,cy0=top+Math.floor(gi/C)*cellH,L=cx0+fs*4,R=cx0+fw-10-xr,T=cy0+fs*2,B=T+fh,pw=R-L,Bt=B-fhD;
   const vals=groups.map(g=>sm.map((s,j)=>s.group===g?d.lv[j]:null).filter(v=>v!==null&&isFinite(v)));
   sm.forEach((s,j)=>csv.push([csvq(d.name),csvq(s.name),csvq(s.group),d.lv[j].toFixed(4)].join(",")));
-  const ps=stat?vals.map((v,k)=>k?welch(vals[0],v):NaN):[];
+  let ps=stat?vals.map((v,k)=>k===ref?NaN:welch(vals[ref],v)):[];
+  if(adj){const ix=ps.map((p,k)=>isFinite(p)?k:-1).filter(k=>k>=0),q=bh(ix.map(k=>ps[k]));ps=ps.slice();ix.forEach((k,i)=>ps[k]=q[i])}
   let lo=Infinity,hi=-Infinity;vals.forEach(v=>{for(const x of v){lo=Math.min(lo,x);hi=Math.max(hi,x)}});
   if(bar){vals.forEach(v=>{if(!v.length)return;const m=v.reduce((a,b)=>a+b,0)/v.length,sd=v.length>1?Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/(v.length-1)):0;hi=Math.max(hi,m+sd)});lo=Math.min(lo,0)}
   if(!isFinite(lo)){lo=0;hi=1}if(hi-lo<1e-9)hi=lo+1;
-  const nst=ps.filter(isFinite).length,span=hi-lo,top2=hi+span*(0.06+0.13*nst),y0=bar?lo:lo-span*0.06;
-  const Y=v=>B-(v-y0)/(top2-y0)*fh,bw=pw/groups.length,X=k=>L+bw*(k+0.5);
+  const span=hi-lo,top2=hi+span*0.04,y0=bar?lo:lo-span*0.06;
+  const Y=v=>B-(v-y0)/(top2-y0)*fhD,bw=pw/groups.length,X=k=>L+bw*(k+0.5);
   o+=`<text x="${(L+R)/2}" y="${cy0+fs*1.2}" text-anchor="middle" font-weight="bold" fill="#111"${it?' font-style="italic"':""}>${esc(d.name)}</text>`;
   const yt=ticks(y0,hi,4);for(const v of yt)o+=`<line x1="${L}" x2="${R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#eee"/><line x1="${L-4}" x2="${L}" y1="${Y(v)}" y2="${Y(v)}" stroke="#222"/><text x="${L-6}" y="${Y(v)+fs*0.35}" text-anchor="end" fill="#222">${fmt(v)}</text>`;
   vals.forEach((v,k)=>{if(!v.length)return;const c=GCOL[k%GCOL.length],s=v.slice().sort((a,b)=>a-b),x=X(k),w=Math.min(bw*0.56,40);
@@ -199,17 +205,26 @@ function bxSvg(){if(!BX||!BX.genes.length)return null;const {groups,genes,sm}=BX
     o+=`<path d="M${x} ${Y(wh)}V${Y(q3)}M${x} ${Y(q1)}V${Y(wl)}M${x-w/4} ${Y(wh)}H${x+w/4}M${x-w/4} ${Y(wl)}H${x+w/4}" stroke="#333" fill="none"/>`;
     o+=`<rect x="${x-w/2}" y="${Y(q3)}" width="${w}" height="${Math.max(1,Y(q1)-Y(q3))}" fill="${c}" fill-opacity="0.35" stroke="${c}" stroke-width="1.4"/><line x1="${x-w/2}" x2="${x+w/2}" y1="${Y(q2)}" y2="${Y(q2)}" stroke="${c}" stroke-width="2.2"/>`}
    if(showPt)for(const z of v)o+=`<circle cx="${(x+(rnd()-0.5)*w*0.6).toFixed(1)}" cy="${Y(z).toFixed(1)}" r="2.6" fill="${c}" stroke="#fff" stroke-width="0.6"/>`});
-  let lv=0;ps.forEach((p,k)=>{if(!isFinite(p))return;const yy=Y(hi+span*(0.06+0.13*lv))-2;lv++;
-   o+=`<path d="M${X(0)} ${yy+5}V${yy}H${X(k)}V${yy+5}" stroke="#444" fill="none"/><text x="${(X(0)+X(k))/2}" y="${yy-3}" text-anchor="middle" font-size="${fs*0.85}" fill="#222">${fmtP(p)}</text>`});
+  if(star){const yy=Bt-fs*0.5;ps.forEach((p,k)=>{if(!isFinite(p))return;const t=stars(p);
+    o+=`<text x="${X(k)}" y="${yy}" text-anchor="middle" font-size="${t==="ns"?fs*0.8:fs*1.05}" ${t==="ns"?'fill="#999"':'fill="#111" font-weight="bold"'}>${t}</text>`});
+   if(stat)o+=`<path d="M${X(ref)-5} ${Bt-fs*0.9}L${X(ref)} ${Bt-fs*0.3}L${X(ref)+5} ${Bt-fs*0.9}Z" fill="#555"/>`}
+  else{const ord=ps.map((p,k)=>k).filter(k=>isFinite(ps[k])).sort((a,b)=>Math.abs(a-ref)-Math.abs(b-ref)||a-b);
+   ord.forEach((k,lv)=>{const p=ps[k],yy=Bt-6-lv*step,x1=Math.min(X(ref),X(k)),x2=Math.max(X(ref),X(k));
+    o+=`<path d="M${x1} ${yy+4}V${yy}H${x2}V${yy+4}" stroke="#444" fill="none"/><text x="${(x1+x2)/2}" y="${yy-3}" text-anchor="middle" font-size="${fs*0.85}" fill="#222">${(adj?fmtP(p).replace(/^p/,"q"):fmtP(p))}</text>`})}
   o+=`<path d="M${L} ${T-4}V${B}H${R}" stroke="#222" fill="none"/>`;
-  groups.forEach((g,k)=>{o+=rot?`<text transform="translate(${X(k)} ${B+fs*0.9}) rotate(35)" fill="#222">${esc(g)}</text>`:`<text x="${X(k)}" y="${B+fs+5}" text-anchor="middle" fill="#222">${esc(g)}</text>`});
+  groups.forEach((g,k)=>{o+=rot?`<text transform="translate(${X(k)-fs*0.2} ${B+fs*0.9}) rotate(35)" fill="#222"${stat&&k===ref?' font-weight="bold"':""}>${esc(g)}</text>`:`<text x="${X(k)}" y="${B+fs+5}" text-anchor="middle" fill="#222"${stat&&k===ref?' font-weight="bold"':""}>${esc(g)}</text>`});
   if(gi%C===0)o+=`<text transform="translate(${cx0+fs*1.1} ${(T+B)/2}) rotate(-90)" text-anchor="middle" fill="#111">${esc(yl)}</text>`});
  BX.csv="gene,sample,group,value\n"+csv.join("\n");return o+"</svg>"}
-function bxDraw(err){if(err){blank("bx",err);return}if(!matReady("bx"))return;BX=bxData();
+function bxRefOpts(groups){const s=$("bxRef"),cur=s.value,key=groups.join("\u0001");if(s.dataset.k===key)return;s.dataset.k=key;
+ const def=groups.includes(cur)?cur:(groups.find(g=>/(^|[_\s.-])(pbs|ctrl|control|con|ctl|wt|nc|veh|vehicle|mock|dmso|sham|untreated|normal|对照)([_\s.-]|$)/i.test(g))||groups[0]);
+ s.innerHTML=groups.map(g=>`<option value="${esc(g)}"${g===def?" selected":""}>${esc(g)}</option>`).join("")}
+function bxNote(){if(!BX||!BX.mode||!$("bxSt").checked||BX.groups.length<2)return"";const m=BX.mode;
+ return`<span>${esc(TT("Welch t 检验，每组与对照组「{0}」比较",m.ref))}${esc(m.adj?TT("，BH 校正后的 q 值"):TT("，未做多重校正"))}${m.star?esc(TT("；* q/p<0.05，** <0.01，*** <0.001，**** <0.0001，ns 不显著；▼ 为对照组")):""}</span>`}
+function bxDraw(err){if(err){blank("bx",err);return}if(!matReady("bx"))return;BX=bxData();bxRefOpts(BX.groups);
  if(!BX.genes.length){blank("bx",TT("请输入要画的基因"));return}
- $("bxSheet").innerHTML=bxSvg();$("bxStats").innerHTML=`<span>${TT("<b>{0}</b> 个基因",BX.genes.length)}</span><span>${TT("{0} 个分组：{1}",BX.groups.length,esc(BX.groups.join(TT("、"))))}</span>`+($("bxSt").checked&&BX.groups.length>=2?`<span>${esc(TT("Welch t 检验，每组与第一组比较，未做多重校正"))}</span>`:"")}
+ $("bxSheet").innerHTML=bxSvg();$("bxStats").innerHTML=`<span>${TT("<b>{0}</b> 个基因",BX.genes.length)}</span><span>${TT("{0} 个分组：{1}",BX.groups.length,esc(BX.groups.join(TT("、"))))}</span>`+bxNote()}
 $("bxG").oninput=()=>bxDraw();
-for(const id of ["bxT","bxPt","bxSt","bxIt","bxC"])$(id).onchange=()=>bxDraw();
+for(const id of ["bxT","bxPt","bxSt","bxIt","bxC","bxRef","bxMk","bxAdj"])$(id).onchange=()=>bxDraw();
 for(const id of ["bxFs","bxTtl"])$(id).oninput=()=>{if(BX&&BX.genes.length)$("bxSheet").innerHTML=bxSvg()};
 bindExp("bx","gene_expression",()=>bxSvg(),()=>BX&&BX.csv);
 
