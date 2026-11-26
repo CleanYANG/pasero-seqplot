@@ -269,6 +269,11 @@ function hSmpUI(){
  $("hSmp").innerHTML=Hs.smp.map((s,k)=>`<div><input type="checkbox" data-k="${k}" ${s.on?"checked":""} aria-label="${esc(s.name)}"><span title="${esc(s.name)}">${esc(s.name)}</span><input type="text" data-g="${k}" value="${esc(s.group)}" aria-label="${esc(s.name)} group"></div>`).join("")||'<div style="display:block;color:var(--mut)">'+esc(TT("没有找到数值列"))+'</div>';
 }
 $("hSmp").onchange=e=>{const k=e.target.dataset.k;if(k!==undefined){Hs.smp[+k].on=e.target.checked;hBuild()}};
+function hSmpMatch(s,q){const ws=q.toLowerCase().split(/[\s,，]+/).filter(Boolean);const txt=(s.name+" "+s.group).toLowerCase();return ws.length&&ws.every(w=>txt.includes(w))}
+$("hSmpBar").onclick=e=>{const a=e.target.dataset&&e.target.dataset.a;if(!a||!Hs.smp||!Hs.smp.length)return;const q=$("hSmpQ").value.trim();
+ if(a==="only"&&!q){$("hSmpQ").focus();return}
+ Hs.smp.forEach(s=>{s.on=a==="all"?true:a==="none"?false:a==="inv"?!s.on:hSmpMatch(s,q)});hSmpUI();hBuild();track("smp_bulk",{a})};
+$("hSmpQ").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("hSmpBar").querySelector('[data-a="only"]').click()}};
 $("hSmp").oninput=e=>{const k=e.target.dataset.g;if(k!==undefined){Hs.smp[+k].group=e.target.value.trim()||TT("未分组");matDraw()}};
 async function hRead(f){
  setMsg("hMsg",TT("正在读取 {0} …",f.name));

@@ -59,6 +59,7 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 .smp{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:10px;margin-top:4px}
 .smp div{display:grid;grid-template-columns:28px minmax(0,1fr) 110px;gap:6px;align-items:center;padding:4px 8px;border-bottom:1px solid var(--line);font-size:14px}
 .smp div:last-child{border-bottom:none}
+.smpBar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}.smpBar .btn{min-height:32px;padding:2px 12px;font-size:13px}.smpBar input{flex:1 1 120px;min-width:100px;min-height:32px;padding:3px 8px;font-size:13px}
 .smp input[type=text]{min-height:32px;padding:3px 6px;font-size:14px}
 .smp input[type=checkbox]{width:18px;height:18px;accent-color:var(--acc)}
 .smp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -474,8 +475,9 @@ input[type=range]{width:100%;accent-color:var(--acc)}
 <div id="hSheetBox" hidden><label for="hSh">工作表</label><select id="hSh"></select></div>
 <label for="hG">基因名列</label><select id="hG"></select>
 <label>样本列和分组</label>
+<div class="smpBar" id="hSmpBar"><button type="button" class="btn" data-a="all">全选</button><button type="button" class="btn" data-a="none">全不选</button><button type="button" class="btn" data-a="inv">反选</button><input type="text" id="hSmpQ" placeholder="按名字筛选，如 F PBS" aria-label="按名字筛选"><button type="button" class="btn" data-a="only">只选匹配的</button></div>
 <div class="smp" id="hSmp"></div>
-<div class="note">已自动勾选样本列并按名字猜了分组，可以直接修改分组名。</div>
+<div class="note">已自动勾选样本列并按名字猜了分组，可以直接修改分组名。筛选框里用空格分隔多个关键词，样本名要同时包含才算匹配；样本名或分组名都算。</div>
 <label for="hType">数值类型</label>
 <select id="hType"><option value="auto">自动判断</option><option value="counts">原始 counts → log2(CPM+1)</option><option value="norm">FPKM / TPM → log2(x+1)</option><option value="log">已经取过 log，不再转换</option></select>
 <div class="msg" id="hTypeMsg"></div>
